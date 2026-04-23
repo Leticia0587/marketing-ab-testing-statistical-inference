@@ -84,6 +84,7 @@ Procedimentos aplicados:
 * O aumento relativo observado foi de cerca de **43%**.
 * O teste estatístico indicou **evidência robusta contra a hipótese nula**.
 * O intervalo de confiança não inclui zero, reforçando a significância estatística.
+* O Cohen's h calculado foi de aproximadamente **0.0530**, indicando **efeito de magnitude pequena** — reforçando que significância estatística e relevância prática são dimensões distintas.
 
 ---
 
