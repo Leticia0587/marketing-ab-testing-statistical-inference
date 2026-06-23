@@ -1,118 +1,197 @@
-# A/B Testing Statistical Analysis — Marketing Campaign
+# Análise Estatística de Experimento A/B Campanha de Marketing Digital
 
-Antes de tomar decisões estratégicas sobre campanhas digitais, **validar estatisticamente os resultados é indispensável**.
-Este projeto aplica **estatística inferencial e análise exploratória** para avaliar o impacto real de um anúncio digital sobre a taxa de conversão dos usuários.
-
-O objetivo é demonstrar domínio dos **fundamentos de experimentação, teste de hipóteses e interpretação estatística orientada a negócio**.
+> **Quantificando o impacto causal de um anúncio digital na taxa de conversão por meio de inferência estatística rigorosa.**
 
 ---
 
-## Dataset
+## Resumo Executivo
 
-* **Fonte:** Kaggle
-* **Nome:** *Marketing A/B Testing*
-* **Link:** https://www.kaggle.com/datasets/faviovaz/marketing-ab-testing
-* **Contexto:** experimento controlado para avaliar impacto de anúncio digital
-* **Tamanho:** ~588.000 registros
+Uma empresa realizou um experimento controlado expondo usuários a um anúncio digital (`ad`) ou a um Anúncio de Serviço Público neutro (`psa`). Este projeto entrega uma análise estatística completa da validação da qualidade dos dados ao teste de hipótese formal, análise de poder e estimativa de impacto de negócio.
 
-O dataset representa um experimento A/B real, contendo usuários divididos entre grupo controle e grupo exposto ao anúncio.
+**Principal resultado:** O anúncio digital aumentou a conversão em **+0,77 ponto percentual** (+43% de lift relativo). O resultado é estatisticamente significativo ao nível de 1% (z = 7,37, p ≈ 1,7 × 10⁻¹³) e robusto a todas as verificações de qualidade.
 
 ---
 
-## Objetivo
+## Problema de Negócio
 
-Realizar uma **análise estatística completa de um experimento A/B**, buscando responder:
+Campanhas de marketing digital exigem decisões de investimento baseadas em evidências. Executar uma campanha sem validação estatística expõe o negócio a dois riscos:
 
-* Existe diferença na taxa de conversão entre os grupos?
-* A diferença observada pode ser atribuída ao acaso?
-* O efeito é estatisticamente significativo?
-* A magnitude do impacto justifica decisão estratégica?
+- **Falsos positivos:** declarar uma campanha eficaz quando a diferença é ruído aleatório → orçamento desperdiçado
+- **Falsos negativos:** descartar uma campanha eficaz por falta de evidência → receita perdida
 
----
-
-## O que foi analisado
-
-As análises foram conduzidas principalmente sobre:
-
-* Grupo experimental (`ad` vs `psa`)
-* Indicador de conversão (`converted`)
-* Taxa de conversão por grupo
-* Diferença absoluta e relativa entre proporções
-* Tamanho das amostras
-* Intervalo de confiança da diferença
+Este projeto demonstra como o **teste A/B com metodologia estatística rigorosa** elimina o achismo das decisões de campanha uma competência central em organizações orientadas a dados.
 
 ---
 
-## Abordagem Analítica
+## Desenho do Experimento
 
-O projeto foi estruturado em duas etapas complementares:
+| Parâmetro | Valor |
+|-----------|-------|
+| **Dataset** | Marketing A/B Testing ([Kaggle](https://www.kaggle.com/datasets/faviovaz/marketing-ab-testing)) |
+| **Total de usuários** | 588.101 |
+| **Tratamento (ad)** | 564.577 usuários (96%) |
+| **Controle (psa)** | 23.524 usuários (4%) |
+| **Métrica de resultado** | Conversão binária (converteu: sim/não) |
+| **Variáveis auxiliares** | Total de anúncios, dia da semana, horário do dia |
 
-### 1. Análise Exploratória
+### Grupos
 
-* Inspeção da estrutura do dataset
-* Verificação de consistência e integridade
-* Distribuição dos grupos
-* Cálculo das taxas de conversão
-* Avaliação preliminar das diferenças observadas
-* Verificação das condições para aplicação do teste Z
-
-Essa etapa garante entendimento sólido do experimento antes da inferência.
-
----
-
-### 2. Inferência Estatística
-
-Foram formuladas formalmente as hipóteses:
-
-H₀: A taxa de conversão é igual entre os grupos.
-H₁: A taxa de conversão é diferente entre os grupos.
-
-Procedimentos aplicados:
-
-* Teste Z para duas proporções
-* Cálculo da estatística Z
-* Cálculo do p-valor
-* Construção de intervalo de confiança de 95%
-* Decisão estatística com nível de significância de 5%
+- **`ad`** Usuários que viram um anúncio digital com intenção comercial
+- **`psa`** Usuários que viram um Anúncio de Serviço Público (controle, sem conteúdo comercial)
 
 ---
 
-## Principais Insights
+## Metodologia
 
-* A taxa de conversão do grupo exposto ao anúncio foi superior à do grupo controle.
-* A diferença absoluta foi de aproximadamente **0,77 ponto percentual**.
-* O aumento relativo observado foi de cerca de **43%**.
-* O teste estatístico indicou **evidência robusta contra a hipótese nula**.
-* O intervalo de confiança não inclui zero, reforçando a significância estatística.
-* O Cohen's h calculado foi de aproximadamente **0.0530**, indicando **efeito de magnitude pequena** — reforçando que significância estatística e relevância prática são dimensões distintas.
+### Fase 1 Validação da Qualidade dos Dados (`01_exploratory_analysis.ipynb`)
+
+Antes de qualquer análise, realizamos validações formais:
+
+| Verificação | Justificativa |
+|-------------|--------------|
+| Remoção da coluna de índice | `Unnamed: 0` é artefato de exportação CSV, não uma variável |
+| Valores nulos | Ausências diferenciais entre grupos indicam censura informativa |
+| Linhas duplicadas | Inflam o tamanho amostral → deflacionam erros padrão → falsos positivos |
+| User IDs duplicados | Violam o pressuposto de independência do teste Z |
+| Contaminação entre grupos | Usuários em ambos os grupos invalidam o isolamento experimental |
+
+Todas as verificações aprovadas. Dataset limpo.
+
+### Fase 2 Validação Formal da Randomização
+
+Além de inspeção visual, aplicamos **testes qui-quadrado de homogeneidade** para verificar formalmente o balanceamento de covariáveis:
+
+- **Distribuição por dia da semana:** teste χ² com 7 categorias
+- **Distribuição por horário:** teste χ² com 24 categorias
+- **Equivalência de exposição:** teste Mann-Whitney U (não paramétrico, adequado para `total ads` com distribuição assimétrica)
+
+### Fase 3 Análise de Dose-Resposta
+
+Segmentamos o grupo de tratamento por faixas de exposição para investigar se maior quantidade de anúncios correlaciona com maior conversão fornecendo insumo para otimização da frequência de mídia.
+
+### Fase 4 Teste de Hipótese (`02_hypothesis_testing.ipynb`)
+
+**Por que unilateral?** A pergunta de negócio é direcional: *"O anúncio aumenta a conversão?"* Um teste bilateral desperdiçaria poder estatístico testando se o anúncio também poderia *diminuir* a conversão o que levaria à mesma decisão de negócio ("não veicular"). O teste unilateral (direita) é o enquadramento estatisticamente correto.
+
+| Componente | Valor |
+|------------|-------|
+| **H₀** | p_ad ≤ p_psa |
+| **H₁** | p_ad > p_psa |
+| **Teste** | Teste Z unilateral para duas proporções |
+| **α** | 0,05 |
+| **Valor crítico** | z = 1,645 |
+
+### Fase 5 Tamanho do Efeito e Análise de Poder
+
+- **Cohen's h** quantifica a magnitude do efeito independentemente do tamanho amostral
+- **Análise de poder post-hoc** confirma que a amostra foi adequada
+- **Cálculo de tamanho mínimo amostral** mostra o que um design balanceado exigiria
 
 ---
 
-## Interpretação
+## Principais Resultados
 
-Os resultados indicam que a exposição ao anúncio aumentou a taxa de conversão de forma estatisticamente significativa.
+### Resultados Estatísticos
 
-Entretanto:
+| Métrica | Valor |
+|---------|-------|
+| Taxa de conversão (ad) | 2,55% |
+| Taxa de conversão (psa) | 1,79% |
+| **Lift absoluto** | **+0,77 p.p.** |
+| **Lift relativo** | **+43%** |
+| IC 95% para o lift | [+0,60 p.p., +0,94 p.p.] |
+| Estatística Z | 7,37 |
+| P-valor (unilateral) | ≈ 1,7 × 10⁻¹³ |
+| Cohen's h | 0,053 (pequeno) |
+| Poder estatístico | > 99% |
 
-* A magnitude absoluta do efeito é moderada.
-* O grande tamanho amostral contribui para elevado poder estatístico.
-* Significância estatística não implica automaticamente relevância financeira.
+### Qualidade da Randomização
 
-A decisão estratégica deve considerar custo da campanha, retorno esperado e métricas complementares de negócio.
+Ambos os testes qui-quadrado (dia da semana e horário) não encontraram diferença estatisticamente significativa na distribuição entre os grupos. O processo de randomização não introduziu confundimento temporal.
+
+### Dose-Resposta
+
+A exposição ao anúncio e a conversão apresentam relação **não linear**. Frequências muito altas (100+ anúncios) não produzem conversão proporcionalmente maior sugerindo possível fadiga publicitária em exposições extremas.
+
+### Impacto de Negócio
+
+| Alcance | Conversões Adicionais |
+|---------|----------------------|
+| 100 mil usuários | ~770 |
+| 1 milhão de usuários | ~7.700 |
+| 10 milhões de usuários | ~77.000 |
+
+> A projeção de receita requer dados de custo por impressão não disponíveis neste dataset. Tomadores de decisão devem comparar o CPM da campanha com a receita por conversão para determinar o limiar de rentabilidade.
 
 ---
 
 ## Conclusão
 
-Este projeto reforça a importância da **inferência estatística na validação de experimentos A/B**.
+O anúncio digital aumenta comprovada e significativamente a taxa de conversão. A evidência é robusta:
 
-O trabalho demonstra não apenas execução técnica do teste estatístico, mas também:
+1. **Estatisticamente significativo:** p ≈ 10⁻¹³, muito abaixo de qualquer limiar α convencional
+2. **Praticamente relevante:** +43% de lift relativo gera milhares de conversões em escala
+3. **Causalmente suportado:** validação formal da randomização descarta confundimento temporal
+4. **Bem dimensionado:** poder alcançado > 99% risco mínimo de Erro Tipo II
 
-* Estruturação adequada de hipóteses
-* Aplicação correta de métodos inferenciais
-* Interpretação crítica dos resultados
-* Conexão entre evidência estatística e decisão de negócio
+**Recomendação:** Veicular a campanha de anúncios. Priorizar exposição na faixa de 6 a 60 anúncios (pico da dose-resposta) e monitorar rendimentos decrescentes acima de 100 impressões por usuário.
 
-A experimentação controlada é uma ferramenta essencial para evitar decisões baseadas em variações aleatórias.
+---
 
+## Estrutura do Projeto
 
+```
+marketing-ab-testing-statistical-inference/
+├── data/
+│   └── marketing_AB.csv                  # Dataset bruto (588K linhas)
+├── notebooks/
+│   ├── 01_exploratory_analysis.ipynb     # Qualidade dos dados + EDA + randomização
+│   └── 02_hypothesis_testing.ipynb       # Teste Z + poder + impacto de negócio
+├── outputs/
+│   ├── group_distribution.png
+│   ├── randomizacao_dia.png
+│   ├── randomizacao_hora.png
+│   ├── distribuicao_exposicao.png
+│   ├── dose_resposta.png
+│   ├── curva_poder.png
+│   ├── impacto_negocio.png
+│   └── conversion_rate_by_group.png
+└── README.md
+```
+
+---
+
+## Tecnologias
+
+| Categoria | Ferramentas |
+|-----------|-------------|
+| **Linguagem** | Python 3.10+ |
+| **Manipulação de dados** | pandas, numpy |
+| **Testes estatísticos** | scipy.stats, statsmodels |
+| **Visualização** | matplotlib, seaborn |
+| **Ambiente** | Jupyter Notebook |
+
+---
+
+## Como Executar
+
+```bash
+# Clonar o repositório
+git clone https://github.com/Leticia0587/marketing-ab-testing-statistical-inference.git
+cd marketing-ab-testing-statistical-inference
+
+# Instalar dependências
+pip install pandas numpy scipy statsmodels matplotlib seaborn jupyter
+
+# Abrir os notebooks
+jupyter notebook notebooks/
+```
+
+Execute `01_exploratory_analysis.ipynb` primeiro, depois `02_hypothesis_testing.ipynb`.
+
+---
+
+## Fonte dos Dados
+
+**Marketing A/B Testing** Favio Vázquez  
+Disponível em: https://www.kaggle.com/datasets/faviovaz/marketing-ab-testing
